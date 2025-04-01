@@ -2,10 +2,11 @@ import os
 import shutil
 from converter import markdown_to_html_node
 from pathlib import Path
+import sys
 
 
 dir_path_static = "./static"
-dir_path_public = "./public"
+dir_path_public = "./docs"
 dir_path_content = "./content"
 template_path = "./template.html"
 
@@ -24,7 +25,7 @@ def copy_tree(source_dir_path, dest_dir_path):
             copy_tree(from_path, dest_path)
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(BASEPATH, from_path, template_path, dest_path):
     print("a;sldfkjas;ldkfjasdl;kfjasdfj")
     print(f" * {from_path} {template_path} -> {dest_path}")
     from_file = open(from_path, "r")
@@ -41,6 +42,8 @@ def generate_page(from_path, template_path, dest_path):
     title = extract_title(markdown_content)
     template = template.replace("{{ Title }}", title)
     template = template.replace("{{ Content }}", html)
+    template = template.replace('href="', f'href="{BASEPATH}')
+    template = template.replace('src="', f'src="{BASEPATH}')
 
     dest_dir_path = os.path.dirname(dest_path)
     if dest_dir_path != "":
@@ -49,15 +52,15 @@ def generate_page(from_path, template_path, dest_path):
     to_file.write(template)
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(basepath, dir_path_content, template_path, dest_dir_path):
     for filename in os.listdir(dir_path_content):
         from_path = os.path.join(dir_path_content, filename)
         dest_path = os.path.join(dest_dir_path, filename)
         if os.path.isfile(from_path):
             dest_path = Path(dest_path).with_suffix(".html")
-            generate_page(from_path, template_path, dest_path)
+            generate_page(basepath, from_path, template_path, dest_path)
         else:
-            generate_pages_recursive(from_path, template_path, dest_path)
+            generate_pages_recursive(basepath, from_path, template_path, dest_path)
 
 
 def extract_title(md):
@@ -69,11 +72,17 @@ def extract_title(md):
 
 
 def main():
+    basepath = ""
+    if len(sys.argv) == 1:
+        basepath = "/"
+    else:
+        basepath = sys.argv[1]
+
     print("Copying static files to public directory...")
     copy_tree(dir_path_static, dir_path_public)
 
     print("Generating content...")
-    generate_pages_recursive(dir_path_content, template_path, dir_path_public)
+    generate_pages_recursive(basepath, dir_path_content, template_path, dir_path_public)
 
 
 if __name__ == "__main__":
